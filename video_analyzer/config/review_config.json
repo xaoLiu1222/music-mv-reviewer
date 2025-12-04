@@ -7,7 +7,7 @@
     "aspect": {
       "enabled": true,
       "black_threshold": 15,
-      "border_ratio": 0.05
+      "total_border_ratio": 0.40
     },
     "volume": {
       "enabled": true,

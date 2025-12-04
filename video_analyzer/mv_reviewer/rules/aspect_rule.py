@@ -17,16 +17,16 @@ class AspectRule(BaseRule):
 
     Checks for:
     - Vertical aspect ratio (height > width)
-    - Black borders on any side (top, bottom, left, right)
+    - Black borders: top+bottom >= 40% OR left+right >= 40%
     """
 
     rule_id = 2
     rule_name = "竖屏/黑边检测"
-    rule_description = "检测竖屏视频或带有黑边的视频"
+    rule_description = "检测竖屏视频或黑边占比>=40%的视频"
 
     # Default thresholds
-    DEFAULT_BLACK_THRESHOLD = 15  # Pixel value below this is considered black
-    DEFAULT_BORDER_RATIO = 0.05   # Minimum border ratio to trigger (5%)
+    DEFAULT_BLACK_THRESHOLD = 15      # Pixel value below this is considered black
+    DEFAULT_TOTAL_BORDER_RATIO = 0.40 # Total border ratio threshold (40%)
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize aspect rule.
@@ -39,9 +39,9 @@ class AspectRule(BaseRule):
             'black_threshold',
             self.DEFAULT_BLACK_THRESHOLD
         )
-        self.border_ratio = self.config.get(
-            'border_ratio',
-            self.DEFAULT_BORDER_RATIO
+        self.total_border_ratio = self.config.get(
+            'total_border_ratio',
+            self.DEFAULT_TOTAL_BORDER_RATIO
         )
 
     def check(self, context: ReviewContext) -> Optional[RuleViolation]:
@@ -51,7 +51,7 @@ class AspectRule(BaseRule):
             context: Review context with video path
 
         Returns:
-            RuleViolation if vertical or has black borders, None otherwise
+            RuleViolation if vertical or has excessive black borders, None otherwise
         """
         if not self.enabled:
             return None
@@ -92,17 +92,23 @@ class AspectRule(BaseRule):
                 logger.error("Could not read video frame")
                 return None
 
-            # Check 2: Black borders
+            # Check 2: Black borders (total ratio >= 40%)
             border_info = self._detect_black_borders(frame)
 
-            if border_info['has_borders']:
+            if border_info['has_violation']:
                 return self.create_violation(
-                    description=f"检测到黑边: {', '.join(border_info['border_sides'])}",
+                    description=border_info['description'],
                     confidence=border_info['confidence'],
                     details={
                         'type': 'black_borders',
-                        'border_sides': border_info['border_sides'],
-                        'border_ratios': border_info['border_ratios'],
+                        'violation_type': border_info['violation_type'],
+                        'top_ratio': border_info['top_ratio'],
+                        'bottom_ratio': border_info['bottom_ratio'],
+                        'left_ratio': border_info['left_ratio'],
+                        'right_ratio': border_info['right_ratio'],
+                        'vertical_total': border_info['vertical_total'],
+                        'horizontal_total': border_info['horizontal_total'],
+                        'threshold': self.total_border_ratio,
                         'width': width,
                         'height': height
                     }
@@ -117,50 +123,62 @@ class AspectRule(BaseRule):
     def _detect_black_borders(self, frame: np.ndarray) -> Dict[str, Any]:
         """Detect black borders on frame edges.
 
+        New logic: Violation if top+bottom >= 40% OR left+right >= 40%
+
         Args:
             frame: Video frame as numpy array
 
         Returns:
             Dictionary with border detection results
         """
-        height, width = frame.shape[:2]
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        border_sides = []
-        border_ratios = {}
-
-        # Check top border
+        # Get individual border ratios
         top_ratio = self._get_border_ratio(gray, 'top')
-        if top_ratio >= self.border_ratio:
-            border_sides.append('上')
-            border_ratios['top'] = top_ratio
-
-        # Check bottom border
         bottom_ratio = self._get_border_ratio(gray, 'bottom')
-        if bottom_ratio >= self.border_ratio:
-            border_sides.append('下')
-            border_ratios['bottom'] = bottom_ratio
-
-        # Check left border
         left_ratio = self._get_border_ratio(gray, 'left')
-        if left_ratio >= self.border_ratio:
-            border_sides.append('左')
-            border_ratios['left'] = left_ratio
-
-        # Check right border
         right_ratio = self._get_border_ratio(gray, 'right')
-        if right_ratio >= self.border_ratio:
-            border_sides.append('右')
-            border_ratios['right'] = right_ratio
 
-        has_borders = len(border_sides) > 0
-        confidence = max(border_ratios.values()) if border_ratios else 0.0
+        # Calculate totals
+        vertical_total = top_ratio + bottom_ratio    # 上下黑边总和
+        horizontal_total = left_ratio + right_ratio  # 左右黑边总和
+
+        # Check if violation (>= 40%)
+        has_violation = False
+        violation_type = None
+        description = ""
+
+        if vertical_total >= self.total_border_ratio:
+            has_violation = True
+            violation_type = 'vertical_borders'
+            description = f"上下黑边占比过高: {vertical_total*100:.1f}% (阈值: {self.total_border_ratio*100:.0f}%)"
+
+        if horizontal_total >= self.total_border_ratio:
+            has_violation = True
+            if violation_type:
+                violation_type = 'both_borders'
+                description = f"上下黑边: {vertical_total*100:.1f}%, 左右黑边: {horizontal_total*100:.1f}% (阈值: {self.total_border_ratio*100:.0f}%)"
+            else:
+                violation_type = 'horizontal_borders'
+                description = f"左右黑边占比过高: {horizontal_total*100:.1f}% (阈值: {self.total_border_ratio*100:.0f}%)"
+
+        # Calculate confidence based on how much it exceeds threshold
+        confidence = 0.0
+        if has_violation:
+            max_ratio = max(vertical_total, horizontal_total)
+            confidence = min((max_ratio / self.total_border_ratio), 1.0)
 
         return {
-            'has_borders': has_borders,
-            'border_sides': border_sides,
-            'border_ratios': border_ratios,
-            'confidence': min(confidence * 10, 1.0)  # Scale to 0-1
+            'has_violation': has_violation,
+            'violation_type': violation_type,
+            'description': description,
+            'top_ratio': top_ratio,
+            'bottom_ratio': bottom_ratio,
+            'left_ratio': left_ratio,
+            'right_ratio': right_ratio,
+            'vertical_total': vertical_total,
+            'horizontal_total': horizontal_total,
+            'confidence': confidence
         }
 
     def _get_border_ratio(self, gray: np.ndarray, side: str) -> float:
