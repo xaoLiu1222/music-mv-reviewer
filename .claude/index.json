@@ -1,0 +1,309 @@
+{
+  "timestamp": "2025-12-04T00:00:00Z",
+  "scan_version": "1.0.0",
+  "project": {
+    "name": "video-analyzer",
+    "type": "Python Package",
+    "description": "视频分析工具，使用视觉模型和 Whisper 进行视频内容分析",
+    "version": "0.1.1",
+    "license": "Apache-2.0",
+    "repository": "https://github.com/byjlw/video-analyzer"
+  },
+  "statistics": {
+    "total_files": 50,
+    "scanned_files": 35,
+    "coverage_percentage": 70,
+    "ignored_files": 15,
+    "languages": {
+      "Python": 15,
+      "Markdown": 6,
+      "JSON": 2,
+      "HTML": 1,
+      "CSS": 1,
+      "JavaScript": 1,
+      "Text": 2
+    },
+    "lines_of_code": {
+      "Python": 1800,
+      "JavaScript": 200,
+      "CSS": 150,
+      "HTML": 100
+    }
+  },
+  "modules": [
+    {
+      "path": "/video_analyzer",
+      "name": "video_analyzer",
+      "type": "core",
+      "description": "核心视频分析引擎",
+      "language": "Python",
+      "entry_points": [
+        "cli.py::main"
+      ],
+      "key_files": [
+        "cli.py",
+        "analyzer.py",
+        "audio_processor.py",
+        "frame.py",
+        "config.py",
+        "prompt.py"
+      ],
+      "interfaces": {
+        "cli": "video-analyzer 命令行工具",
+        "api": "Python API（Config, VideoProcessor, AudioProcessor, VideoAnalyzer）"
+      },
+      "dependencies": {
+        "external": [
+          "opencv-python>=4.8.0",
+          "numpy>=1.24.0",
+          "torch>=2.0.0",
+          "openai-whisper>=20231117",
+          "faster-whisper>=0.6.0",
+          "requests>=2.31.0",
+          "Pillow>=10.0.0",
+          "pydub>=0.25.1"
+        ],
+        "system": [
+          "FFmpeg"
+        ]
+      },
+      "tests": {
+        "exists": true,
+        "files": [
+          "/test_prompt_loading.py"
+        ],
+        "coverage": "minimal"
+      },
+      "config_files": [
+        "config/default_config.json"
+      ],
+      "data_models": [
+        "Frame",
+        "AudioTranscript"
+      ],
+      "coverage": {
+        "entry": true,
+        "interfaces": true,
+        "tests": false,
+        "data_models": true,
+        "config": true
+      }
+    },
+    {
+      "path": "/video_analyzer/clients",
+      "name": "clients",
+      "type": "submodule",
+      "description": "LLM 客户端抽象层",
+      "language": "Python",
+      "key_files": [
+        "llm_client.py",
+        "ollama.py",
+        "generic_openai_api.py"
+      ],
+      "interfaces": {
+        "abstract": "LLMClient 基类",
+        "implementations": [
+          "OllamaClient",
+          "GenericOpenAIAPIClient"
+        ]
+      },
+      "dependencies": {
+        "external": [
+          "requests>=2.31.0"
+        ]
+      },
+      "coverage": {
+        "entry": true,
+        "interfaces": true,
+        "tests": false
+      }
+    },
+    {
+      "path": "/video-analyzer-ui",
+      "name": "video-analyzer-ui",
+      "type": "web_ui",
+      "description": "Web 界面服务",
+      "language": "Python/Flask",
+      "entry_points": [
+        "video_analyzer_ui/server.py::main"
+      ],
+      "key_files": [
+        "video_analyzer_ui/server.py",
+        "video_analyzer_ui/templates/index.html",
+        "video_analyzer_ui/static/js/main.js",
+        "video_analyzer_ui/static/css/styles.css"
+      ],
+      "interfaces": {
+        "http": [
+          "GET /",
+          "POST /upload",
+          "POST /analyze/<session_id>",
+          "GET /analyze/<session_id>/stream",
+          "GET /results/<session_id>",
+          "POST /cleanup/<session_id>"
+        ]
+      },
+      "dependencies": {
+        "external": [
+          "flask>=3.0.0",
+          "video-analyzer>=0.1.0",
+          "werkzeug>=3.0.0"
+        ]
+      },
+      "tests": {
+        "exists": false,
+        "coverage": "none"
+      },
+      "config_files": [
+        "pyproject.toml"
+      ],
+      "coverage": {
+        "entry": true,
+        "interfaces": true,
+        "tests": false,
+        "config": true
+      }
+    },
+    {
+      "path": "/docs",
+      "name": "documentation",
+      "type": "docs",
+      "description": "项目文档",
+      "key_files": [
+        "DESIGN.md",
+        "USAGES.md",
+        "CONTRIBUTING.md",
+        "AI.md"
+      ],
+      "coverage": {
+        "complete": true
+      }
+    }
+  ],
+  "important_paths": {
+    "entry_points": [
+      "/video_analyzer/cli.py",
+      "/video-analyzer-ui/video_analyzer_ui/server.py"
+    ],
+    "config_files": [
+      "/video_analyzer/config/default_config.json",
+      "/video-analyzer-ui/pyproject.toml",
+      "/setup.py"
+    ],
+    "test_files": [
+      "/test_prompt_loading.py"
+    ],
+    "documentation": [
+      "/readme.md",
+      "/docs/DESIGN.md",
+      "/docs/USAGES.md",
+      "/docs/CONTRIBUTING.md",
+      "/docs/AI.md",
+      "/CLAUDE.md",
+      "/video_analyzer/CLAUDE.md",
+      "/video-analyzer-ui/CLAUDE.md"
+    ],
+    "prompts": [
+      "/video_analyzer/prompts/frame_analysis/frame_analysis.txt",
+      "/video_analyzer/prompts/frame_analysis/describe.txt"
+    ]
+  },
+  "ignored_patterns": {
+    "from_gitignore": [
+      "assets/",
+      "output/",
+      "__pycache__/",
+      "*.py[cod]",
+      "build/",
+      "dist/",
+      "*.egg-info/",
+      ".cache",
+      "*.log",
+      ".env",
+      ".venv",
+      "venv/",
+      ".DS_Store",
+      ".aider*"
+    ],
+    "ignored_directories": [
+      ".git",
+      "__pycache__",
+      "build",
+      "dist",
+      ".venv",
+      "venv",
+      "node_modules"
+    ],
+    "ignored_file_count": 15
+  },
+  "coverage_report": {
+    "overall": "70%",
+    "by_module": {
+      "video_analyzer": {
+        "coverage": "80%",
+        "gaps": [
+          "缺少完整的单元测试套件",
+          "缺少集成测试",
+          "缺少性能测试"
+        ]
+      },
+      "video_analyzer/clients": {
+        "coverage": "60%",
+        "gaps": [
+          "缺少 LLM 客户端测试",
+          "缺少 API 模拟测试"
+        ]
+      },
+      "video-analyzer-ui": {
+        "coverage": "50%",
+        "gaps": [
+          "缺少所有测试",
+          "缺少前端测试",
+          "缺少端到端测试"
+        ]
+      },
+      "docs": {
+        "coverage": "100%",
+        "gaps": []
+      }
+    },
+    "missing_components": [
+      "完整的测试套件",
+      "CI/CD 配置",
+      "Docker 配置",
+      "性能基准测试"
+    ]
+  },
+  "next_steps": {
+    "priority_high": [
+      "添加核心模块的单元测试（video_analyzer/）",
+      "添加 UI 模块的集成测试（video-analyzer-ui/）",
+      "实现会话自动清理机制"
+    ],
+    "priority_medium": [
+      "添加 CI/CD 配置（GitHub Actions）",
+      "创建 Docker 镜像",
+      "添加性能基准测试",
+      "完善错误处理和日志"
+    ],
+    "priority_low": [
+      "添加更多使用示例",
+      "创建 API 文档（Sphinx）",
+      "添加国际化支持",
+      "优化前端 UI"
+    ]
+  },
+  "scan_metadata": {
+    "scan_date": "2025-12-04",
+    "scan_tool": "Claude Code Architect",
+    "scan_mode": "adaptive",
+    "truncated": false,
+    "completion_status": "complete",
+    "notes": [
+      "完成全仓清点和模块扫描",
+      "识别出 2 个主要模块和 1 个子模块",
+      "文档覆盖完整",
+      "测试覆盖较低，需要改进"
+    ]
+  }
+}

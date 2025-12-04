@@ -26,6 +26,7 @@ setup(
     entry_points={
         "console_scripts": [
             "video-analyzer=video_analyzer.cli:main",
+            "mv-reviewer=video_analyzer.cli_review:main",
         ],
     },
     python_requires=">=3.8",

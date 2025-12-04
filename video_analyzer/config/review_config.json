@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "metadata": {
+      "enabled": true,
+      "blocked_creators": ["林夕"]
+    },
+    "aspect": {
+      "enabled": true,
+      "black_threshold": 15,
+      "border_ratio": 0.05
+    },
+    "volume": {
+      "enabled": true,
+      "change_threshold_db": 10.0,
+      "segment_duration_ms": 1000,
+      "min_volume_db": -40.0,
+      "max_volume_db": -3.0
+    },
+    "content": {
+      "enabled": true,
+      "confidence_threshold": 0.7
+    }
+  },
+  "violation_dir": "violations",
+  "report_format": "json"
+}
