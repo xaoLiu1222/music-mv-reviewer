@@ -111,6 +111,13 @@ def load_review_config(config_path: Optional[str] = None) -> dict:
     return default_config
 
 
+# 默认LLM配置 (硅基流动)
+DEFAULT_LLM_CONFIG = {
+    'api_url': 'https://api.siliconflow.cn/v1',
+    'model': 'Qwen/Qwen2-VL-72B-Instruct'
+}
+
+
 def main():
     """Main entry point for mv-reviewer CLI."""
     parser = argparse.ArgumentParser(
@@ -118,26 +125,28 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-  # 审核单个视频
-  mv-reviewer video.mp4 --violation-dir ./violations
+  # 审核单个视频 (需要先设置API密钥)
+  mv-reviewer video.ts --api-key "你的硅基流动API密钥"
 
   # 批量审核目录
-  mv-reviewer ./mv_folder/ --violation-dir ./violations --report report.json
+  mv-reviewer ./mv_folder/ --api-key "sk-xxx" --report report.json
 
-  # 仅检查特定规则
-  mv-reviewer video.mp4 --rules 1 2 3
+  # 仅检查规则1-3 (不需要LLM)
+  mv-reviewer video.ts --rules 1 2 3
 
-  # 使用自定义配置
-  mv-reviewer video.mp4 --review-config review_config.json
+  # 试运行 (只检测不移动)
+  mv-reviewer video.ts --api-key "sk-xxx" --dry-run
 
 规则说明:
-  1 - 作词作曲检测 (黑名单创作者)
+  1 - 作词作曲检测 (林夕等黑名单创作者)
   2 - 竖屏/黑边检测
   3 - 音量突变检测
-  4 - 暴露/导向问题检测
-  5 - 纯风景背景检测
-  6 - 广告内容检测
-  7 - 吸毒画面检测
+  4 - 暴露/导向问题检测 (需要LLM)
+  5 - 纯风景背景检测 (需要LLM)
+  6 - 广告内容检测 (需要LLM)
+  7 - 吸毒画面检测 (需要LLM)
+
+支持格式: .ts, .mp4, .mkv, .avi, .mov, .wmv, .flv, .webm
         """
     )
 
@@ -241,11 +250,14 @@ def main():
     # Load configurations
     config = Config(args.config)
 
-    # Override config with CLI arguments
+    # Override config with CLI arguments (使用默认硅基流动配置)
+    if args.api_key:
+        # 如果提供了API密钥，自动使用硅基流动配置
+        config.config.setdefault('clients', {})['default'] = 'openai_api'
+        config.config['clients'].setdefault('openai_api', {})['api_key'] = args.api_key
+        config.config['clients']['openai_api']['api_url'] = args.api_url or DEFAULT_LLM_CONFIG['api_url']
     if args.client:
         config.config.setdefault('clients', {})['default'] = args.client
-    if args.api_key:
-        config.config.setdefault('clients', {}).setdefault('openai_api', {})['api_key'] = args.api_key
     if args.api_url:
         config.config.setdefault('clients', {}).setdefault('openai_api', {})['api_url'] = args.api_url
 
@@ -260,8 +272,8 @@ def main():
         if llm_client is None:
             logger.warning("LLM客户端未配置，规则4-7将被跳过")
 
-    # Get model name
-    model = args.model or get_model(config)
+    # Get model name (默认使用硅基流动的Qwen2-VL)
+    model = args.model or DEFAULT_LLM_CONFIG['model']
 
     # Initialize reviewer
     reviewer = MVReviewer(

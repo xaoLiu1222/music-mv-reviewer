@@ -20,7 +20,7 @@ class MVReviewer:
     """Main class for reviewing music videos against configured rules."""
 
     # Supported video extensions
-    VIDEO_EXTENSIONS = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm'}
+    VIDEO_EXTENSIONS = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.ts'}
 
     def __init__(
         self,
