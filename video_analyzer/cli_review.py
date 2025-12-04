@@ -243,11 +243,11 @@ def main():
 
     # Override config with CLI arguments
     if args.client:
-        config._config.setdefault('clients', {})['default'] = args.client
+        config.config.setdefault('clients', {})['default'] = args.client
     if args.api_key:
-        config._config.setdefault('clients', {}).setdefault('openai_api', {})['api_key'] = args.api_key
+        config.config.setdefault('clients', {}).setdefault('openai_api', {})['api_key'] = args.api_key
     if args.api_url:
-        config._config.setdefault('clients', {}).setdefault('openai_api', {})['api_url'] = args.api_url
+        config.config.setdefault('clients', {}).setdefault('openai_api', {})['api_url'] = args.api_url
 
     review_config = load_review_config(args.review_config)
 
